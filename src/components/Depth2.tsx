@@ -18,7 +18,7 @@ export default function Depth2({ food, isExactMatch, onSuccess, onGiveUp }: Dept
     const [buttonScale, setButtonScale] = useState(1);
 
     const requiredClicks = food.clickCount;
-    const CLICK_TIMEOUT = 1000; // 1초 내에 클릭해야 함
+    const CLICK_TIMEOUT = 500; // 0.5초 내에 클릭해야 함
 
     // 클릭 타임아웃 체크
     useEffect(() => {
@@ -142,7 +142,7 @@ export default function Depth2({ food, isExactMatch, onSuccess, onGiveUp }: Dept
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                     <div className="bg-white rounded-2xl p-6 text-center shadow-xl">
                         <p className="text-xl font-bold text-red-500 mb-2">연타 실패!</p>
-                        <p className="text-gray-600">1초 안에 클릭해야 해요</p>
+                        <p className="text-gray-600">0.5초 안에 클릭해야 해요</p>
                     </div>
                 </div>
             )}
