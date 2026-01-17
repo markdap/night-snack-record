@@ -17,10 +17,13 @@ const handler = NextAuth({
     callbacks: {
         async signIn({ user, account, profile }) {
             if (account?.provider === "google" && user.email && user.name) {
-                // 백그라운드에서 가입 정보 로깅 (에러가 발생해도 로그인은 진행되도록)
-                appendUserToSheet(user.email, user.name).catch(err =>
-                    console.error("Sheets Logging Error:", err)
-                );
+                console.log("Attempting to log user to Sheets:", user.email);
+                try {
+                    await appendUserToSheet(user.email, user.name);
+                    console.log("Successfully logged user to Sheets");
+                } catch (err) {
+                    console.error("Sheets Logging Error:", err);
+                }
             }
             return true;
         },
