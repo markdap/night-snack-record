@@ -6,13 +6,14 @@ export interface SnackRecord {
     calories: number;
     timestamp: number;
     date: string; // YYYY-MM-DD HH:mm 형식
+    userEmail: string; // 사용자 식별용 (추가)
 }
 
 const STORAGE_KEY = "honey_pig_records";
 
 // 기록 저장
 export function saveRecord(record: Omit<SnackRecord, "id" | "date">): SnackRecord {
-    const records = getRecords();
+    const records = getAllRecords();
     const now = new Date();
 
     const newRecord: SnackRecord = {
@@ -30,8 +31,8 @@ export function saveRecord(record: Omit<SnackRecord, "id" | "date">): SnackRecor
     return newRecord;
 }
 
-// 기록 조회
-export function getRecords(): SnackRecord[] {
+// 모든 기록 조회 (내부용)
+function getAllRecords(): SnackRecord[] {
     if (typeof window === "undefined") return [];
 
     try {
@@ -42,9 +43,15 @@ export function getRecords(): SnackRecord[] {
     }
 }
 
-// 기록 개수 조회
-export function getRecordCount(): number {
-    return getRecords().length;
+// 특정 사용자의 기록 조회
+export function getRecords(userEmail: string): SnackRecord[] {
+    const allRecords = getAllRecords();
+    return allRecords.filter(record => record.userEmail === userEmail);
+}
+
+// 특정 사용자의 기록 개수 조회
+export function getRecordCount(userEmail: string): number {
+    return getRecords(userEmail).length;
 }
 
 // 날짜 포맷팅
