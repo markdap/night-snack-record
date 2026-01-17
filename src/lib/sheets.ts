@@ -14,7 +14,6 @@ export async function appendUserToSheet(email: string, name: string) {
         const auth = new google.auth.GoogleAuth({
             credentials: {
                 client_email: serviceAccountEmail,
-                // Vercel에서 환경변수 입력 시 \n이 \\n으로 들어오는 경우와 실제 줄바꿈인 경우 모두 대응
                 private_key: privateKey.replace(/\\n/g, "\n").replace(/"/g, ''),
             },
             scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -22,11 +21,36 @@ export async function appendUserToSheet(email: string, name: string) {
 
         const sheets = google.sheets({ version: "v4", auth });
 
-        // 1. 시트 목록을 가져와서 'Sheet1' 또는 '시트1' 또는 첫 번째 시트 찾기
+        // 1. 시트 이름 감지
         const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
         const sheetName = spreadsheet.data.sheets?.[0]?.properties?.title || "Sheet1";
 
-        // 2. 기존 이메일 목록을 가져와서 중복 체크 (B열)
+        // 2. 헤더 확인 및 설정 (A1:C1)
+        const headerCheck = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: `${sheetName}!A1:C1`,
+        });
+
+        const headers = ["가입일시", "계정", "사용자명"];
+        const currentHeaders = headerCheck.data.values?.[0] || [];
+
+        // 헤더가 없거나 다르면 설정 (첫 번째 데이터가 헤더 위치를 차지하고 있을 수 있으므로 주의)
+        if (JSON.stringify(currentHeaders) !== JSON.stringify(headers)) {
+            // 만약 첫 줄에 데이터가 있다면 (이메일 형식이 있다면) 한 줄 아래로 밀지 않고 
+            // 사용자의 요청대로 헤더를 강제 삽입합니다. 
+            // (기존 데이터가 1번줄에 있다면 수동으로 옮기셔야 할 수 있습니다)
+            await sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: `${sheetName}!A1:C1`,
+                valueInputOption: "USER_ENTERED",
+                requestBody: {
+                    values: [headers],
+                },
+            });
+            console.log("Headers initialized in row 1");
+        }
+
+        // 3. 중복 체크 (B2:B 범위에서 이메일 검색)
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range: `${sheetName}!B:B`,
@@ -34,11 +58,11 @@ export async function appendUserToSheet(email: string, name: string) {
 
         const existingEmails = response.data.values?.flat() || [];
         if (existingEmails.includes(email)) {
-            console.log(`User ${email} already exists in Sheets. Skipping.`);
+            console.log(`User ${email} already exists. Skipping.`);
             return { success: true, message: "Already exists" };
         }
 
-        // 3. 중복이 아니면 데이터 추가
+        // 4. 데이터 추가
         const now = new Date();
         const timestamp = now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
